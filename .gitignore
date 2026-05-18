@@ -143,6 +143,6 @@ vite.config.ts.timestamp-*
 .vite/
 
 # folders
-files/
-prompts/
-answers/
+files/*
+prompts/*
+answers/*
