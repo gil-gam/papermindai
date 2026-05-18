@@ -4,16 +4,29 @@ import { Neo4jVectorStore } from "@langchain/community/vectorstores/neo4j_vector
 import { DocumentProcessor } from "./documentProcessor.js";
 import { AI } from "./ai.js";
 import { CONFIG } from "./config/env.js";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
+import { existsSync } from "fs";
+import path from "path";
 import { type PretrainedOptions } from "@huggingface/transformers";
 
 let _neo4jVectorStore: Neo4jVectorStore | null = null;
+
+async function ensureFilesFolder() {
+  const folderPath = path.join(process.cwd(), "files");
+
+  if (!existsSync(folderPath)) {
+    await mkdir(folderPath, { recursive: true });
+  }
+}
 
 async function clearAll(store: Neo4jVectorStore, label: string) {
   await store.query(`MATCH (n:\`${label}\`) DETACH DELETE n`);
 }
 
 async function main() {
+
+  await ensureFilesFolder();
+
   const processor = new DocumentProcessor(CONFIG.textSplitter);
   const documents = await processor.loadAndSplit();
 
@@ -58,6 +71,8 @@ async function main() {
   console.log("Sistema pronto. Aguardando perguntas externas.");
 }
 
-main().catch(console.error).finally(async () => {
-  await _neo4jVectorStore?.close();
-});
+main()
+  .catch(console.error)
+  .finally(async () => {
+    await _neo4jVectorStore?.close();
+  });

@@ -54,9 +54,18 @@ export class AI {
       )})`
     );
 
-    const contexts = vectorResults
-      .filter(([, score]) => score > 0.5)
-      .map(([doc]) => doc.pageContent)
+    // Aplica threshold: se nenhum chunk superar 0.5, usa todos os topK
+    const filtered =
+      vectorResults.some(([, score]) => score > 0.5)
+        ? vectorResults.filter(([, score]) => score > 0.5)
+        : vectorResults;
+
+    // Montagem enriquecida do contexto
+    const contexts = filtered
+      .map(([doc]) => {
+        const page = doc.metadata?.pageNumber ?? "N/A";
+        return `Página ${page}:\n${doc.pageContent}`;
+      })
       .join("\n\n---\n\n");
 
     return {
