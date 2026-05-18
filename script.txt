@@ -1,0 +1,22 @@
+template
+    - config.js
+    - util.js
+    - package.json
+    - docker-compose
+    - /files/*.pdf          ← agora lê todos os PDFs da pasta /files
+npm ci
+npm run infra:up
+npm run infra:down
+show /files/*.pdf
+--
+documentProcessor
+    loadAndSplit
+    processa todos os PDFs da pasta
+embeddings
+    gera os vetores para cada chunk
+VectorStoreManager
+    addDocuments (para todos os chunks de todos os PDFs)
+    clearAll
+index.ts
+    vectorStoreManager
+    fluxo completo de ingestão + perguntas dinâmicas

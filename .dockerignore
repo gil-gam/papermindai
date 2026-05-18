@@ -1,0 +1,47 @@
+# Dependências instaladas localmente
+node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ambiente
+.env
+.env.*
+
+# Arquivos temporários
+.tmp
+.temp
+*.tmp
+*.swp
+*.swo
+
+# Diretórios de build ou cache
+dist
+build
+.cache
+coverage
+
+# Configurações específicas de editor
+.vscode
+.idea
+*.iml
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Conteúdo sensível ou não necessário
+neo4j/data
+neo4j/logs
+neo4j/plugins
+
+# Pastas de PDF de entrada (opcional excluir)
+# Se quiser incluir no container, comente esta linha
+files/
+
+# Outputs
+answers/
