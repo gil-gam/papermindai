@@ -1,6 +1,6 @@
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { type TextSplitterConfig, getPdfFiles } from "./config.ts";
+import { type TextSplitterConfig, getPdfFiles } from "./config.js";
 
 export class DocumentProcessor {
   private textSplitterConfig: TextSplitterConfig;
@@ -13,13 +13,17 @@ export class DocumentProcessor {
     const files = getPdfFiles();
 
     if (files.length === 0) {
-      console.warn("⚠️  Nenhum PDF para processar.");
+      console.warn("⚠️ Nenhum PDF para processar.");
       return [];
     }
 
     console.log(`📁 Encontrados ${files.length} PDF(s) para processar`);
 
-    const splitter = new RecursiveCharacterTextSplitter(this.textSplitterConfig);
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: this.textSplitterConfig.chunkSize,
+      chunkOverlap: this.textSplitterConfig.chunkOverlap,
+    });
+
     const allChunks: Array<{
       pageContent: string;
       metadata: { source: string; pageNumber: number };
@@ -29,16 +33,16 @@ export class DocumentProcessor {
       const loader = new PDFLoader(filePath);
       const rawDocuments = await loader.load();
 
-      console.log(`   📄 "${filePath}" → ${rawDocuments.length} páginas`);
+      console.log(` 📄 "${filePath}" → ${rawDocuments.length} páginas`);
 
       const chunks = await splitter.splitDocuments(rawDocuments);
 
-      const mapped = chunks.map(doc => ({
+      const mapped = chunks.map((doc) => ({
         pageContent: doc.pageContent,
         metadata: {
           source: filePath,
-          pageNumber: doc.metadata.loc?.pageNumber ?? 0
-        }
+          pageNumber: doc.metadata.loc?.pageNumber ?? 0,
+        },
       }));
 
       allChunks.push(...mapped);

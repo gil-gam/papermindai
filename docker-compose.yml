@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.9"
 
 services:
   neo4j:
@@ -6,15 +6,15 @@ services:
     container_name: neo4j
     restart: unless-stopped
 
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+
     volumes:
       - ./neo4j/data:/data
       - ./neo4j/logs:/logs
       - ./neo4j/plugins:/plugins
       - ./import:/var/lib/neo4j/import
-
-    ports:
-      - "7474:7474"
-      - "7687:7687"
 
     environment:
       - NEO4J_AUTH=neo4j/password
@@ -22,3 +22,35 @@ services:
       - NEO4J_apoc_import_file_enabled=true
       - NEO4J_apoc_export_file_enabled=true
       - NEO4J_apoc_import_file_use__neo4j__config=true
+
+  backend:
+    build: ./backend
+    container_name: papermindai-backend
+    command: ["node", "server.js"]
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - NLP_MODEL=${NLP_MODEL}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password
+
+    depends_on:
+      - neo4j
+
+  frontend:
+    build: ./frontend
+    container_name: papermindai-frontend
+
+    ports:
+      - "5173:80"
+
+    depends_on:
+      - backend
+
+volumes:
+  neo4j_data:

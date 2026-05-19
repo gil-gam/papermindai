@@ -1,19 +1,16 @@
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
-import { ChatOpenAI } from "@langchain/openai";
 import { Neo4jVectorStore } from "@langchain/community/vectorstores/neo4j_vector";
 import { DocumentProcessor } from "./documentProcessor.js";
-import { AI } from "./ai.js";
 import { CONFIG } from "./config/env.js";
 import { mkdir } from "node:fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { type PretrainedOptions } from "@huggingface/transformers";
 
-let _neo4jVectorStore: Neo4jVectorStore | null = null;
+let vectorStore: Neo4jVectorStore | null = null;
 
 async function ensureFilesFolder() {
-  const folderPath = path.join(process.cwd(), "files");
-
+  const folderPath = path.join(process.cwd(), CONFIG.pdf.folder);
   if (!existsSync(folderPath)) {
     await mkdir(folderPath, { recursive: true });
   }
@@ -24,55 +21,44 @@ async function clearAll(store: Neo4jVectorStore, label: string) {
 }
 
 async function main() {
+  console.log("📁 Iniciando ingestão dos PDFs...");
 
   await ensureFilesFolder();
 
   const processor = new DocumentProcessor(CONFIG.textSplitter);
   const documents = await processor.loadAndSplit();
 
+  if (documents.length === 0) {
+    console.log("⚠️ Nenhum documento encontrado para ingestão.");
+    return;
+  }
+
   const embeddings = new HuggingFaceTransformersEmbeddings({
     model: CONFIG.embedding.modelName,
-    pretrainedOptions: CONFIG.embedding.pretrainedOptions as PretrainedOptions
+    pretrainedOptions: CONFIG.embedding.pretrainedOptions as PretrainedOptions,
   });
 
-  const llm = new ChatOpenAI({
-    temperature: CONFIG.openRouter.temperature,
-    maxRetries: CONFIG.openRouter.maxRetries,
-    modelName: CONFIG.openRouter.nlpModel,
-    openAIApiKey: CONFIG.openRouter.apiKey,
-    configuration: {
-      baseURL: CONFIG.openRouter.url,
-      defaultHeaders: CONFIG.openRouter.defaultHeaders
-    }
-  });
-
-  _neo4jVectorStore = await Neo4jVectorStore.fromExistingGraph(
+  vectorStore = await Neo4jVectorStore.fromExistingGraph(
     embeddings,
     CONFIG.neo4j
   );
 
-  await clearAll(_neo4jVectorStore, CONFIG.neo4j.nodeLabel);
+  console.log("🧹 Limpando índice anterior...");
+  await clearAll(vectorStore, CONFIG.neo4j.nodeLabel);
 
+  console.log(`📚 Inserindo ${documents.length} chunks no Neo4j...`);
   for (const doc of documents) {
-    await _neo4jVectorStore.addDocuments([doc]);
+    await vectorStore.addDocuments([doc]);
   }
-
-  const ai = new AI({
-    nlpModel: llm,
-    debugLog: console.log,
-    vectorStore: _neo4jVectorStore,
-    promptConfig: CONFIG.promptConfig,
-    templateText: CONFIG.templateText,
-    topK: CONFIG.similarity.topK
-  });
 
   await mkdir(CONFIG.output.answersFolder, { recursive: true });
 
-  console.log("Sistema pronto. Aguardando perguntas externas.");
+  console.log("✅ Ingestão completa.");
+  console.log("🚀 Seu servidor pode agora responder perguntas via /api/ask.");
 }
 
 main()
-  .catch(console.error)
+  .catch((err) => console.error("❌ Erro na ingestão:", err))
   .finally(async () => {
-    await _neo4jVectorStore?.close();
+    await vectorStore?.close();
   });

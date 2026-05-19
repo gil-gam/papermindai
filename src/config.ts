@@ -1,10 +1,10 @@
-import type { DataType, PretrainedModelOptions } from "@huggingface/transformers";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 /* ----------------------- PROMPT FILES ------------------------- */
 
 const promptsFolder = "./prompts";
+
 const promptsFiles = {
   answerPrompt: `${promptsFolder}/answerPrompt.json`,
   template: `${promptsFolder}/template.txt`
@@ -60,10 +60,10 @@ export const CONFIG = Object.freeze({
   },
 
   embedding: {
-    modelName: process.env.EMBEDDING_MODEL || "text-embedding-3-small",
+    modelName: "sentence-transformers/all-MiniLM-L6-v2",
     pretrainedOptions: {
-      dtype: "fp32" as DataType
-    } satisfies PretrainedModelOptions
+      dtype: "fp32"
+    }
   },
 
   similarity: {
@@ -82,9 +82,10 @@ export function getPdfFiles(): string[] {
   }
 
   const files = readdirSync(folder);
+
   const pdfs = files
-    .filter(f => f.toLowerCase().endsWith(".pdf"))
-    .map(f => join(folder, f));
+    .filter((f) => f.toLowerCase().endsWith(".pdf"))
+    .map((f) => join(folder, f));
 
   if (pdfs.length === 0) {
     console.warn(`[WARN] Nenhum arquivo .pdf encontrado em "${folder}"`);

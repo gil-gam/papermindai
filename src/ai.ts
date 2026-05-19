@@ -1,113 +1,157 @@
 import { type Neo4jVectorStore } from "@langchain/community/vectorstores/neo4j_vector";
-import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { ChatOpenAI } from "@langchain/openai";
 
 type DebugLog = (...args: unknown[]) => void;
 
-type Params = {
+export interface PromptConstraints {
+  tone: string;
+  language: string;
+  format: string;
+}
+
+export interface PromptConfig {
+  role: string;
+  task: string;
+  instructions: string[];
+  constraints: PromptConstraints;
+}
+
+export interface ChainState {
+  question: string;
+  context?: string;
+  topScore?: number;
+  answer?: string;
+  error?: string;
+}
+
+export interface AIParams {
   debugLog: DebugLog;
   vectorStore: Neo4jVectorStore;
   nlpModel: ChatOpenAI;
   promptConfig: any;
   templateText: string;
   topK: number;
-};
-
-interface ChainState {
-  question: string;
-  context?: string;
-  topScore?: number;
-  error?: string;
-  answer?: string;
 }
 
 export class AI {
-  private params: Params;
+  public params: {
+    debugLog: DebugLog;
+    vectorStore: Neo4jVectorStore;
+    nlpModel: ChatOpenAI;
+    promptConfig: PromptConfig;
+    templateText: string;
+    topK: number;
+  };
 
-  constructor(params: Params) {
-    this.params = params;
+  constructor(raw: AIParams) {
+    this.params = {
+      debugLog: raw.debugLog,
+      vectorStore: raw.vectorStore,
+      nlpModel: raw.nlpModel,
+      templateText: raw.templateText,
+      topK: raw.topK,
+      promptConfig: {
+        role: raw.promptConfig?.role ?? "assistant",
+        task: raw.promptConfig?.task ?? "",
+        instructions: Array.isArray(raw.promptConfig?.instructions) ? raw.promptConfig.instructions : [],
+        constraints: {
+          tone: raw.promptConfig?.constraints?.tone ?? "default",
+          language: raw.promptConfig?.constraints?.language ?? "pt",
+          format: raw.promptConfig?.constraints?.format ?? "text"
+        }
+      }
+    };
   }
 
   async retrieveVectorSearchResults(input: ChainState): Promise<ChainState> {
-    this.params.debugLog("🔍 Buscando no vector store do Neo4j...");
+    this.params.debugLog("🔍 Buscando no vector store (Neo4j)…");
 
     const vectorResults = await this.params.vectorStore.similaritySearchWithScore(
       input.question,
       this.params.topK
     );
 
-    if (!vectorResults.length) {
-      this.params.debugLog("⚠️ Nenhum resultado encontrado no vector store.");
+    if (!vectorResults || vectorResults.length === 0) {
       return {
         ...input,
-        error:
-          "Desculpe, não encontrei informações relevantes sobre essa pergunta na base de conhecimento."
+        error: "Não encontrei informação suficiente na base para responder à pergunta."
       };
     }
 
-    const topScore = vectorResults[0]![1];
-    this.params.debugLog(
-      `✅ Encontrados ${vectorResults.length} resultados relevantes (melhor score: ${topScore.toFixed(
-        3
-      )})`
-    );
+    const firstPair = vectorResults[0];
+    if (!firstPair) {
+      return {
+        ...input,
+        error: "Não encontrei informação suficiente na base para responder à pergunta."
+      };
+    }
 
-    // Aplica threshold: se nenhum chunk superar 0.5, usa todos os topK
-    const filtered =
-      vectorResults.some(([, score]) => score > 0.5)
-        ? vectorResults.filter(([, score]) => score > 0.5)
-        : vectorResults;
+    const [, firstScore] = firstPair;
+    if (firstScore === undefined) {
+      return {
+        ...input,
+        error: "Não encontrei informação suficiente na base para responder à pergunta."
+      };
+    }
 
-    // Montagem enriquecida do contexto
-    const contexts = filtered
-      .map(([doc]) => {
-        const page = doc.metadata?.pageNumber ?? "N/A";
+    const filtered = vectorResults.filter((pair) => {
+      if (!pair) return false;
+      const score = pair[1];
+      return score !== undefined && score > 0.5;
+    });
+
+    const finalList = filtered.length > 0 ? filtered : vectorResults;
+
+    const context = finalList
+      .map((pair) => {
+        if (!pair) return "";
+        const [doc] = pair;
+        const page = doc?.metadata?.pageNumber ?? "N/A";
         return `Página ${page}:\n${doc.pageContent}`;
       })
       .join("\n\n---\n\n");
 
     return {
       ...input,
-      context: contexts,
-      topScore
+      context,
+      topScore: firstScore
     };
   }
 
   async generateNLPResponse(input: ChainState): Promise<ChainState> {
     if (input.error) return input;
 
-    this.params.debugLog("🤖 Gerando resposta com IA...");
+    this.params.debugLog("🤖 Gerando resposta com LLM…");
 
-    const responsePrompt = ChatPromptTemplate.fromTemplate(
-      this.params.templateText
-    );
+    const prompt = ChatPromptTemplate.fromTemplate(this.params.templateText);
 
-    const responseChain = responsePrompt
+    const chain = prompt
       .pipe(this.params.nlpModel)
       .pipe(new StringOutputParser());
 
-    const rawResponse = await responseChain.invoke({
+    const raw = await chain.invoke({
       role: this.params.promptConfig.role,
       task: this.params.promptConfig.task,
       tone: this.params.promptConfig.constraints.tone,
       language: this.params.promptConfig.constraints.language,
       format: this.params.promptConfig.constraints.format,
       instructions: this.params.promptConfig.instructions
-        .map((instruction: string, idx: number) => `${idx + 1}. ${instruction}`)
+        .map((t, i) => `${i + 1}. ${t}`)
         .join("\n"),
       question: input.question,
-      context: input.context
+      context: input.context ?? ""
     });
 
     return {
       ...input,
-      answer: rawResponse
+      answer: raw
     };
   }
 
-  async answerQuestion(question: string) {
+  async answerQuestion(question: string): Promise<ChainState> {
     const chain = RunnableSequence.from([
       this.retrieveVectorSearchResults.bind(this),
       this.generateNLPResponse.bind(this)
@@ -117,6 +161,7 @@ export class AI {
 
     this.params.debugLog("\n🎙️ Pergunta:");
     this.params.debugLog(question, "\n");
+
     this.params.debugLog("💬 Resposta:");
     this.params.debugLog(result.answer || result.error, "\n");
 
