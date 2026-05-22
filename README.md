@@ -42,6 +42,7 @@ PORT=3000
 
 ## 🚀 Como rodar
 **1. Ingestão dos PDFs**
+
 Crie a pasta "files" na raiz do projeto e cole os PDFs.
 Em seguida, faça a ingestão:
 ```
@@ -112,6 +113,7 @@ PORT=3000
 
 ## 🚀 How to Run
 **1. PDF ingestion**
+
 Create the "files" folder in the project root and paste the PDFs there.
 Then, perform the ingestion:
 ```
