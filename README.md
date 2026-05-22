@@ -1,5 +1,8 @@
-# 📌 Projeto: Assistente RAG com Embeddings Locais + Neo4j + OpenRouter
-Este projeto implementa um sistema de RAG (Retrieval-Augmented Generation) utilizando:
+# 📌 Projeto: Assistente RAG para dúvidas sobre as disciplinas da Pós‑Graduação em Engenharia de Software com IA
+Este projeto implementa um sistema de **RAG (Retrieval-Augmented Generation)** que responde perguntas sobre o conteúdo das disciplinas da pós-graduação em Engenharia de Software com Inteligência Artificial Aplicada.
+
+A solução utiliza:
+
 Embeddings locais via **Transformers.js (MiniLM‑L6‑v2)**
 **Neo4j** como vetor‑store
 **Node.js + Express** no backend
@@ -65,8 +68,11 @@ Retorno inclui resposta + fontes do PDF.
 
 # 
 
-# 📌 Project: RAG Assistant with Local Embeddings + Neo4j + OpenRouter
-This project implements a full RAG (Retrieval-Augmented Generation) stack using:
+# 📌 Project: RAG Assistant for answering questions about the graduate program in Software Engineering with AI
+This project implements a **RAG (Retrieval-Augmented Generation)** assistant designed to answer questions based on course materials from a graduate program in **Software Engineering with Applied Artificial Intelligence**.
+
+It uses: 
+
 Local embeddings via **Transformers.js (MiniLM‑L6‑v2)**
 **Neo4j** as vector‑store
 **Node.js + Express** backend
