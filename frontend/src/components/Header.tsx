@@ -22,7 +22,7 @@ export function Header() {
           shadow-sm
         "
       >
-        🤖
+        
       </div>
 
       {/* Marca */}
@@ -31,7 +31,6 @@ export function Header() {
           PaperMind AI
         </h1>
         <span className="text-xs text-zinc-500 dark:text-zinc-400">
-          Intelligent Workspace Assistant
         </span>
       </div>
     </header>
