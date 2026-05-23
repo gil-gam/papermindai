@@ -141,3 +141,17 @@ Returns the answer + PDF sources.
 
 **📄 LicenseMIT.**
 
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-start;">
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/Transformers.js-F7931E?style=for-the-badge&logo=huggingface&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/MiniLM--L6--V2-FFC107?style=for-the-badge&logo=huggingface&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/OpenRouter--AI-8B5CF6?style=for-the-badge&logo=openai&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/Neo4j-4581C3?style=for-the-badge&logo=neo4j&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="">
+  <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="">
+</div>
+
